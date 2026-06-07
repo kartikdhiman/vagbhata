@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vagbhata</title>
+</head>
+
+<body>
+  <header>
+    <h1>AṢṬĀṄGA SAṄGRAHA</h1>
+  </header>
+  
+  <main class="container">
+    <section>
+      <hgroup>
+        <h2 class="title">Introduction</h2>
+        <p class="description">Introduction to AṢṬĀṄGA SAṄGRAHA</p>
+      </hgroup>
+      <button class="play-btn" data-audio-src="/src/assets/introduction.m4a" data-track-title="Introduction">
+        <img src="/src/assets/play-button.svg" alt="Play" />
+      </button>
+    </section>
+  </main>
+
+  <footer class="audio-player-bar" id="playerBar">
+    <strong class="player-now-playing" id="nowPlayingTitle">Now Playing</strong>
+    <audio id="mainAudioPlayer" controls></audio>
+  </footer>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
