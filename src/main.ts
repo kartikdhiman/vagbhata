@@ -2,10 +2,12 @@ import './style.css'
 import playIcon from './assets/play-button.svg'
 import pauseIcon from './assets/pause-button.svg'
 import introductionAudio from './assets/introduction.m4a'
+import ch01Audio from './assets/ch01-ayushkamiya-adhyaya.m4a'
 
 // Map the HTML paths to the Vite-bundled asset URLs
 const audioAssets: Record<string, string> = {
-  '/src/assets/introduction.m4a': introductionAudio
+  '/src/assets/introduction.m4a': introductionAudio,
+  '/src/assets/ch01-ayushkamiya-adhyaya.m4a': ch01Audio
 }
 
 const audioPlayer = document.getElementById('mainAudioPlayer') as HTMLAudioElement;
