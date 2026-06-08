@@ -1,18 +1,42 @@
 import './style.css'
 import playIcon from './assets/play-button.svg'
 import pauseIcon from './assets/pause-button.svg'
-import introductionAudio from './assets/introduction.m4a'
-import ch01Audio from './assets/ch01-ayushkamiya-adhyaya.m4a'
+import clockIcon from './assets/clock.svg'
+import chapters from './data/chapters.json'
 
-// Map the HTML paths to the Vite-bundled asset URLs
-const audioAssets: Record<string, string> = {
-  '/src/assets/introduction.m4a': introductionAudio,
-  '/src/assets/ch01-ayushkamiya-adhyaya.m4a': ch01Audio
+// Dynamically import all audio files in the assets directory to support hashing in production
+const audioGlob = import.meta.glob('./assets/*.m4a', { eager: true, import: 'default' }) as Record<string, string>;
+
+// Map the generated HTML paths to the dynamic Vite-bundled URLs
+const audioAssets: Record<string, string> = {};
+for (const [key, value] of Object.entries(audioGlob)) {
+  const normalizedKey = key.replace('./assets/', '/src/assets/');
+  audioAssets[normalizedKey] = value;
 }
 
 const audioPlayer = document.getElementById('mainAudioPlayer') as HTMLAudioElement;
 const playerBar = document.getElementById('playerBar');
 const titleDisplay = document.getElementById('nowPlayingTitle');
+
+// Render chapter sections dynamically
+const container = document.getElementById('chaptersContainer');
+if (container) {
+  container.innerHTML = chapters.map(ch => `
+    <section>
+      <hgroup>
+        <h2 class="title">${ch.title}</h2>
+        <p class="description">${ch.description}</p>
+        <span class="duration">
+          <img class="clock-icon" src="${clockIcon}" alt="" />
+          ${ch.duration}
+        </span>
+      </hgroup>
+      <button class="play-btn" data-audio-src="${ch.audioSrc}" data-track-title="${ch.title}">
+        <img src="${playIcon}" alt="Play" />
+      </button>
+    </section>
+  `).join('');
+}
 
 // Function to update the icon of a specific button
 function setButtonState(button: HTMLButtonElement, isPlaying: boolean) {
@@ -37,7 +61,6 @@ function findButtonBySrc(src: string): HTMLButtonElement | null {
     const dataSrc = btn.getAttribute('data-audio-src');
     if (dataSrc) {
       const resolved = audioAssets[dataSrc] || dataSrc;
-      // Compare by matching the ending of the URL pathname to avoid absolute vs relative path mismatches
       try {
         const url1 = new URL(resolved, window.location.origin);
         const url2 = new URL(src, window.location.origin);
@@ -62,14 +85,12 @@ function toggleAudio(audioSrc: string, trackTitle: string) {
   const currentSrc = audioPlayer.getAttribute('src');
 
   if (currentSrc === resolvedSrc) {
-    // Toggle play/pause for the same track
     if (audioPlayer.paused) {
       audioPlayer.play().catch(err => console.error("Playback failed:", err));
     } else {
       audioPlayer.pause();
     }
   } else {
-    // Load and play a new track
     resetAllButtons();
     if (titleDisplay) {
       titleDisplay.innerText = "Now Playing: " + trackTitle;
@@ -82,16 +103,19 @@ function toggleAudio(audioSrc: string, trackTitle: string) {
   }
 }
 
-// Bind click event listeners to play buttons
-document.querySelectorAll('.play-btn').forEach(button => {
-  button.addEventListener('click', () => {
-    const audioSrc = button.getAttribute('data-audio-src');
-    const trackTitle = button.getAttribute('data-track-title');
-    if (audioSrc && trackTitle) {
-      toggleAudio(audioSrc, trackTitle);
+// Bind click event listeners to play buttons via delegation
+if (container) {
+  container.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest('.play-btn') as HTMLButtonElement | null;
+    if (button) {
+      const audioSrc = button.getAttribute('data-audio-src');
+      const trackTitle = button.getAttribute('data-track-title');
+      if (audioSrc && trackTitle) {
+        toggleAudio(audioSrc, trackTitle);
+      }
     }
   });
-});
+}
 
 // Setup audio element event listeners to keep page UI in sync
 if (audioPlayer) {
