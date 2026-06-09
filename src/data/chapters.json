@@ -26,5 +26,12 @@
     "description": "Seasonal Regimen: Adapting Lifestyle for Health Through the Seasons",
     "audioSrc": "/src/assets/ch04-rtucharya-adhyaya.m4a",
     "duration": "19:56"
+  },
+  {
+    "filename": "ch05-roganutpadaniya-adhyaya.m4a",
+    "title": "5: Rōgānutpādānīya Adhyāya",
+    "description": "The Etiology of Disease: Understanding the Causes and Pathogenesis of Illness",
+    "audioSrc": "/src/assets/ch05-roganutpadaniya-adhyaya.m4a",
+    "duration": "24:37"
   }
 ]
