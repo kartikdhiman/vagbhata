@@ -313,10 +313,14 @@ const baseUrl = import.meta.env.BASE_URL;
         const searchInput = document.getElementById('searchInput') as HTMLInputElement;
         if (searchInput) {
           let searchDebounce: number | null = null;
+          const normalizeText = (str: string) =>
+            str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
           searchInput.oninput = () => {
             if (searchDebounce) clearTimeout(searchDebounce);
             searchDebounce = window.setTimeout(() => {
-              const query = searchInput.value.toLowerCase().trim();
+              const rawQuery = searchInput.value.trim();
+              const query = normalizeText(rawQuery);
               const sections = document.querySelectorAll('.sthana-section');
 
               requestAnimationFrame(() => {
@@ -325,7 +329,8 @@ const baseUrl = import.meta.env.BASE_URL;
                   const cards = section.querySelectorAll('.chapter-card');
                   
                   cards.forEach(card => {
-                    const title = card.querySelector('.title')?.textContent?.toLowerCase() || '';
+                    const rawTitle = card.querySelector('.title')?.textContent || '';
+                    const title = normalizeText(rawTitle);
                     const desc = card.querySelector('.description')?.textContent?.toLowerCase() || '';
                     if (title.includes(query) || desc.includes(query)) {
                       (card as HTMLElement).style.display = 'flex';
