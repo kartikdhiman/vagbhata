@@ -1,0 +1,104 @@
+---
+import Layout from '../layouts/Layout.astro';
+import chapters from '../data/chapters.json';
+
+const baseUrl = import.meta.env.BASE_URL;
+
+// Define Sthana sequence order and displays
+const STHANA_ORDER = [
+  "Introduction",
+  "Sutrasthana",
+  "Sarirasthana",
+  "Nidanasthana",
+  "Chikitsitasthana",
+  "Kalpasthana",
+  "Uttarasthana"
+];
+
+const STHANA_DISPLAY: Record<string, string> = {
+  "Introduction": "Introduction",
+  "Sutrasthana": "Sūtrasthāna (Section 1)",
+  "Sarirasthana": "Śārīrasthāna (Section 2)",
+  "Nidanasthana": "Nidānasthāna (Section 3)",
+  "Chikitsitasthana": "Cikitsitasthāna (Section 4)",
+  "Kalpasthana": "Kalpasthāna (Section 5)",
+  "Uttarasthana": "Uttarasthāna (Section 6)"
+};
+
+// Group chapters by Sthana
+const groupedChapters = STHANA_ORDER.map(sthana => {
+  const list = chapters
+    .filter(ch => ch.sthana === sthana)
+    .sort((a, b) => a.chapterNumber - b.chapterNumber);
+  
+  return {
+    sthana,
+    title: STHANA_DISPLAY[sthana] || sthana,
+    chapters: list
+  };
+}).filter(group => group.chapters.length > 0); // Only render Sthanas that have active chapters
+
+// Create JSON-LD ItemList Schema for the audio playlist
+const playlistSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Aṣṭāṅga Saṅgraha Audio Chapters",
+  "description": "An indexable audio player for studying the ancient Ayurvedic text Aṣṭāṅga Saṅgraha, written by Vagbhata.",
+  "itemListElement": chapters.map((ch, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": ch.title,
+    "description": ch.description,
+    "url": `https://kartikdhiman.github.io${baseUrl}chapters/${ch.slug}/`
+  }))
+};
+---
+
+<Layout title="Aṣṭāṅga Saṅgraha Audio Player"
+        description="Listen to the Sanskrit chanting and explanation of Vagbhata's Aṣṭāṅga Saṅgraha. Optimized with modern playback controls, search, and reading options."
+        schema={playlistSchema}>
+  
+  <!-- Search/Filter Bar -->
+  <div class="search-container">
+    <input type="search" id="searchInput" class="search-input" placeholder="Search chapters or topics..." aria-label="Search chapters" />
+  </div>
+
+  <!-- Resume Playback Notification Area -->
+  <div id="resumeContainer" class="resume-container"></div>
+
+  <!-- Chapter Index grouped by Sthana -->
+  <div id="chaptersContainer" class="container">
+    {groupedChapters.map(group => (
+      <section class="sthana-section" data-sthana={group.sthana}>
+        <h2 class="sthana-title">{group.title}</h2>
+        <div class="chapter-list">
+          {group.chapters.map(ch => (
+            <a href={`${baseUrl}chapters/${ch.slug}/`} class="chapter-card" data-slug={ch.slug}>
+              <div class="chapter-info">
+                {ch.chapterNumber > 0 && (
+                  <span class="chapter-number">Chapter {ch.chapterNumber}</span>
+                )}
+                <span class="title">{ch.title}</span>
+                <p class="description">{ch.description}</p>
+                <span class="duration">
+                  <!-- Inline Clock SVG for optimal rendering -->
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  {ch.duration}
+                </span>
+              </div>
+              <button class="play-btn" data-slug={ch.slug} data-audio-src={ch.audioSrc} data-track-title={ch.title} aria-label={`Play chapter ${ch.title}`}>
+                <!-- Inline Play SVG -->
+                <svg viewBox="0 0 512 512">
+                  <path d="M348.238,284.418l-120.294,69.507c-10.148,5.864-22.661,5.874-32.826,0.009c-10.158-5.862-16.415-16.699-16.415-28.426V186.493c0-11.728,6.258-22.564,16.415-28.426c5.076-2.93,10.741-4.395,16.406-4.395c5.67,0,11.341,1.468,16.42,4.402l120.295,69.507c10.149,5.864,16.4,16.696,16.4,28.418C364.639,267.722,358.387,278.553,348.238,284.418z"/>
+                </svg>
+              </button>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Layout>

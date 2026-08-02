@@ -3,7 +3,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 
 const config = JSON.parse(fs.readFileSync('./src/data/chapters-config.json', 'utf8'));
-const assetsDir = './src/assets';
+const assetsDir = './public/audio';
 
 // Load existing chapters.json if it exists to preserve pre-computed durations as a fallback
 let existingChapters = [];
@@ -35,7 +35,7 @@ const finalizedChapters = config.map(chapter => {
 
   return {
     ...chapter,
-    audioSrc: `/src/assets/${chapter.filename}`,
+    audioSrc: `/audio/${chapter.filename}`,
     duration
   };
 });

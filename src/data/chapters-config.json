@@ -2,26 +2,41 @@
   {
     "filename": "introduction.m4a",
     "title": "Introduction",
+    "slug": "introduction",
+    "sthana": "Introduction",
+    "chapterNumber": 0,
     "description": "Introduction to AṢṬĀṄGA SAṄGRAHA"
   },
   {
     "filename": "ch01-ayushkamiya-adhyaya.m4a",
-    "title": "1: Āyuṣkāmīya Adhyāya",
+    "title": "Āyuṣkāmīya Adhyāya",
+    "slug": "ayushkamiya-adhyaya",
+    "sthana": "Sutrasthana",
+    "chapterNumber": 1,
     "description": "The Quest for Longevity and the Essence of Ayurveda"
   },
   {
     "filename": "ch03-dincharya-adhyaya.m4a",
-    "title": "3: Diṇacaryā Adhyāya",
+    "title": "Diṇacaryā Adhyāya",
+    "slug": "dincharya-adhyaya",
+    "sthana": "Sutrasthana",
+    "chapterNumber": 3,
     "description": "Daily Regimen: Establishing Healthy Daily Routines for Physical and Mental Well-being"
   },
   {
     "filename": "ch04-rtucharya-adhyaya.m4a",
-    "title": "4: Ṛtucaryā Adhyāya",
+    "title": "Ṛtucaryā Adhyāya",
+    "slug": "rtucharya-adhyaya",
+    "sthana": "Sutrasthana",
+    "chapterNumber": 4,
     "description": "Seasonal Regimen: Adapting Lifestyle for Health Through the Seasons"
   },
   {
     "filename": "ch05-roganutpadaniya-adhyaya.m4a",
-    "title": "5: Rōgānutpādānīya Adhyāya",
+    "title": "Rōgānutpādānīya Adhyāya",
+    "slug": "roganutpadaniya-adhyaya",
+    "sthana": "Sutrasthana",
+    "chapterNumber": 5,
     "description": "The Etiology of Disease: Understanding the Causes and Pathogenesis of Illness"
   }
 ]

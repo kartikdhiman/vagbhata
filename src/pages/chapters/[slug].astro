@@ -1,0 +1,205 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import chapters from '../../data/chapters.json';
+
+export async function getStaticPaths() {
+  return chapters.map(ch => ({
+    params: { slug: ch.slug },
+    props: { chapter: ch }
+  }));
+}
+
+interface ChapterData {
+  filename: string;
+  title: string;
+  slug: string;
+  sthana: string;
+  chapterNumber: number;
+  description: string;
+  audioSrc: string;
+  duration: string;
+}
+
+const { chapter } = Astro.props as { chapter: ChapterData };
+const baseUrl = import.meta.env.BASE_URL;
+
+// Parse duration to ISO 8601 format for schema (e.g., PT25M02S)
+const [mins, secs] = chapter.duration.split(':');
+const schemaDuration = `PT${mins}M${secs}S`;
+
+// Sthana display name formatting
+const STHANA_DISPLAY: Record<string, string> = {
+  "Introduction": "Introduction",
+  "Sutrasthana": "Sūtrasthāna (Sutra Section)",
+  "Sarirasthana": "Śārīrasthāna (Anatomy Section)",
+  "Nidanasthana": "Nidānasthāna (Diagnosis Section)",
+  "Chikitsitasthana": "Cikitsitasthāna (Therapeutics Section)",
+  "Kalpasthana": "Kalpasthāna (Pharmaceutics Section)",
+  "Uttarasthana": "Uttarasthāna (Supplementary Section)"
+};
+
+// Rich textual contents for each chapter to make it search-engine-friendly and informative
+const chapterContents: Record<string, { summary: string; points: string[]; verses: { sanskrit: string; english: string }[] }> = {
+  "introduction": {
+    summary: "The Aṣṭāṅga Saṅgraha is one of the authoritative classical texts of Ayurveda, written by Vagbhata. It represents a synthesis of the early works of Charaka (medicine) and Sushruta (surgery), organized into a comprehensive structure of eight branches (Ashtanga) of medicine.",
+    points: [
+      "Author: Vagbhata the elder (Vriddha Vagbhata), disciple of Avalokita.",
+      "Timeline: Compiled around the 6th century CE.",
+      "Methodology: Blends surgical skills (Susruta) and internal medicine (Caraka).",
+      "Scope: Divided into 6 sections (Sthanas) and 150 chapters total."
+    ],
+    verses: [
+      {
+        sanskrit: "इह खलु आयुर्वेदं नामाष्टाङ्गमुपाङ्गम् अथर्ववेदस्य।",
+        english: "Ayur-veda, which is indeed named of eight parts, is a subsidiary branch of the Atharva Veda."
+      }
+    ]
+  },
+  "ayushkamiya-adhyaya": {
+    summary: "The first chapter, Āyuṣkāmīya (Desire for Longevity), introduces the philosophical foundation of Ayurveda. It outlines the primary qualities of life, the definition of health, the concept of Tridosha (Vata, Pitta, Kapha), and the division of the eight branches of Ayurvedic medicine.",
+    points: [
+      "The goal of Ayurveda is to achieve healthy longevity to fulfill four aspects of life: Dharma (righteousness), Artha (wealth), Kama (desire), and Moksha (liberation).",
+      "Introduction of Tridosha: Vata (air/space), Pitta (fire/water), and Kapha (water/earth).",
+      "The definition of health as a state of balanced doshas, dhatus (tissues), and malas (waste products).",
+      "The eight major branches: Kayachikitsa, Kaumarabhritya, Grahachikitsa, Shalakya, Shalyachikitsa, Vishachikitsa, Rasayana, and Vrishachikitsa."
+    ],
+    verses: [
+      {
+        sanskrit: "आयुःकामायमानेन धर्मार्थसुखसाधनम्।\nआयुर्वेदोपदेशेषु विधेयः परमादरः॥",
+        english: "He who desires long life, which is the instrument for achieving righteousness, wealth, and happiness, should observe the teachings of Ayurveda with the utmost respect."
+      },
+      {
+        sanskrit: "वायुः पित्तं कफश्चेति त्रयो दोषाः समासतः।",
+        english: "Vayu, Pitta, and Kapha are, in brief, the three biological humors (Doshas) responsible for the state of the body."
+      }
+    ]
+  },
+  "dincharya-adhyaya": {
+    summary: "The Diṇacaryā chapter describes the healthy daily routines recommended to preserve bodily homeostasis. It details habits from waking up in the morning until going to bed, promoting physical strength, mental clarity, and prevention of seasonal diseases.",
+    points: [
+      "Brahma Muhurta waking: Waking up 48 minutes before sunrise to align with cosmic energy.",
+      "Hygiene practices: Cleaning teeth (Dantadhavana), tongue scraping (Jihva-Nirlekhana), and collyrium (Anjana) application.",
+      "Abhyanga (Oil Massage): Daily application of sesame oil on the head, ears, and feet to prevent aging, fatigue, and Vata disorders.",
+      "Vyayama (Exercise) and Bathing (Snana): Physical exercises to build immunity and daily warm baths for vitality."
+    ],
+    verses: [
+      {
+        sanskrit: "ब्राह्मे मुहूर्त उत्तिष्ठेत् स्वस्थो रक्षार्थमायुषः।",
+        english: "A healthy person should wake up during Brahma-muhurta (pre-dawn period) to protect and preserve their lifespan."
+      },
+      {
+        sanskrit: "अभ्यङ्गं आचरेत् नित्यं स जराश्रमवातहा।",
+        english: "One should practice oil massage (Abhyanga) daily. It wards off aging, eliminates fatigue, and pacifies excessive Vata."
+      }
+    ]
+  },
+  "rtucharya-adhyaya": {
+    summary: "Ṛtucaryā (Seasonal Regimen) guides how to adapt diet and lifestyle to seasonal shifts. The body reacts to solar and lunar cycles, causing accumulation (Chaya), aggravation (Kopa), and pacification (Shama) of doshas which requires careful adjustment.",
+    points: [
+      "The year is divided into two solar halves: Adana Kala (Northward movement, absorbing strength) and Visarga Kala (Southward movement, releasing strength).",
+      "Six distinct seasons: Shishira (winter), Vasanta (spring), Grishma (summer), Varsha (monsoon), Sharad (autumn), and Hemanta (late autumn).",
+      "Vasanta (Spring) lifestyle: Kapha is aggravated; avoid heavy, sweet, and oily foods; perform purificatory procedures.",
+      "Grishma (Summer) diet: Avoid salty, sour, hot, and spicy elements; consume sweet, cold liquids and rest."
+    ],
+    verses: [
+      {
+        sanskrit: "शीतेष्वर्कबलं हीनं शशिनो वर्धते बलम्।",
+        english: "During the cold seasons, the strength of the sun declines, while the nourishing lunar power increases, leading to a natural buildup of physical strength."
+      }
+    ]
+  },
+  "roganutpadaniya-adhyaya": {
+    summary: "This chapter, Rōgānutpādānīya (Prevention of Diseases), deals with the etiology of diseases resulting from behavioral transgressions. It focuses primarily on the suppression of natural bodily urges (Vegadharana), which causes blockages and initiates pathogenesis.",
+    points: [
+      "Thirteen natural urges (Adharaniya Vegas) that must NEVER be suppressed: urine, feces, semen, flatus, vomiting, sneezing, belching, yawning, hunger, thirst, tears, sleep, and breathing after exertion.",
+      "Mental urges (Dharaniya Vegas) that SHOULD be controlled: greed, jealousy, anger, pride, and attachment.",
+      "Proper seasonal purification (Shodhana) is advised to periodically cleanse accumulated doshas before they trigger disease.",
+      "Ahara (diet), Vihara (lifestyle), and Achara (ethical conduct) form the pillars of health preservation."
+    ],
+    verses: [
+      {
+        sanskrit: "वेगात् न धारयेत् वातविण्मूत्रक्षवत्तृडुद्भवान्।\nन क्षुत्स्वप्नकासश्वासजृम्भाश्रुच्छर्दिरेतसाम्॥",
+        english: "One must not suppress natural physical urges: passing flatus, feces, urine, sneezing, thirst, hunger, sleep, cough, rapid breathing, yawning, tears, vomiting, and ejaculation."
+      }
+    ]
+  }
+};
+
+const content = chapterContents[chapter.slug] || chapterContents["introduction"];
+
+// Create JSON-LD AudioObject Schema for this page
+const audioSchema = {
+  "@context": "https://schema.org",
+  "@type": "AudioObject",
+  "name": `${chapter.title} - Aṣṭāṅga Saṅgraha`,
+  "description": chapter.description,
+  "contentUrl": `https://kartikdhiman.github.io${baseUrl}audio/${chapter.filename}`,
+  "embedUrl": `https://kartikdhiman.github.io${baseUrl}chapters/${chapter.slug}/`,
+  "duration": schemaDuration,
+  "uploadDate": "2026-07-09T00:00:00Z",
+  "genre": "Ayurveda Recitation",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Vagbhata",
+    "logo": {
+      "@type": "ImageObject",
+      "url": `https://kartikdhiman.github.io${baseUrl}favicon.svg`
+    }
+  }
+};
+---
+
+<Layout title={`${chapter.title} - Aṣṭāṅga Saṅgraha Audio`} description={chapter.description} schema={audioSchema}>
+  
+  <!-- Scroll-Driven Reading Progress Indicator -->
+  <div class="scroll-progress-bar"></div>
+
+  <!-- Back Link with Base Url -->
+  <a href={baseUrl} class="back-link">
+    &larr; Back to Chapter List
+  </a>
+
+  <!-- Chapter Detail Container -->
+  <article class="detail-card">
+    <header class="detail-header">
+      <div class="chapter-meta">
+        <span class="chapter-number">{STHANA_DISPLAY[chapter.sthana] || chapter.sthana}</span>
+        <h1 class="title">{chapter.title}</h1>
+      </div>
+      <button class="play-btn" data-slug={chapter.slug} data-audio-src={chapter.audioSrc} data-track-title={chapter.title} aria-label={`Play chapter ${chapter.title}`}>
+        <!-- Inline Play SVG -->
+        <svg viewBox="0 0 512 512">
+          <path d="M348.238,284.418l-120.294,69.507c-10.148,5.864-22.661,5.874-32.826,0.009c-10.158-5.862-16.415-16.699-16.415-28.426V186.493c0-11.728,6.258-22.564,16.415-28.426c5.076-2.93,10.741-4.395,16.406-4.395c5.67,0,11.341,1.468,16.42,4.402l120.295,69.507c10.149,5.864,16.4,16.696,16.4,28.418C364.639,267.722,358.387,278.553,348.238,284.418z"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="detail-body">
+      <h3>Summary & Overview</h3>
+      <p>{content.summary}</p>
+
+      <h3>Key Concepts Explained</h3>
+      <ul>
+        {content.points.map(pt => (
+          <li>{pt}</li>
+        ))}
+      </ul>
+
+      {content.verses.length > 0 && (
+        <div class="verses-section">
+          <h3>Key Sanskrit Verse (Sūtra)</h3>
+          {content.verses.map(vs => (
+            <div class="verse-card" style="margin-top: 15px; border-left: 2px solid var(--primary-color); padding-left: 15px; font-style: italic;">
+              <p class="sanskrit-text" style="font-size: 1.15rem; font-weight: 500; white-space: pre-line; color: var(--primary-color); margin-bottom: 8px;">
+                {vs.sanskrit}
+              </p>
+              <p class="english-translation" style="font-size: 0.95rem; color: var(--text-color);">
+                {vs.english}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </article>
+</Layout>

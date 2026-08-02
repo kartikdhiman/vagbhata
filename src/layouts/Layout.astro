@@ -1,0 +1,368 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../style.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  schema?: Record<string, any>;
+}
+
+const { title, description = "Aṣṭāṅga Saṅgraha audio player", schema } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href={`${baseUrl}favicon.svg`} />
+    
+    <!-- Title and Meta Description for Search Engine Optimization (SEO) -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <!-- Open Graph tags for rich indexing -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    
+    <!-- Preconnect to Google Fonts to speed up LCP and font rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+    
+    <!-- Astro 7 View Transitions/Client Router -->
+    <ClientRouter />
+
+    <!-- Schema.org JSON-LD Structured Data for Google Rich Snippets -->
+    {schema && <script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />}
+  </head>
+  <body data-base-url={baseUrl}>
+    <header>
+      <a href={baseUrl}>
+        <h1>AṢṬĀṄGA SAṄGRAHA</h1>
+      </a>
+    </header>
+
+    <main class="container">
+      <slot />
+    </main>
+
+    <!-- Persistent Audio Player Footer -->
+    <footer class="audio-player-bar" id="playerBar" transition:persist>
+      <div class="player-header">
+        <span class="player-label">NOW PLAYING:</span>
+        <strong class="player-now-playing" id="nowPlayingTitle">No Track Selected</strong>
+      </div>
+      <div class="player-controls">
+        <button id="skipBackBtn" class="player-control-btn" title="Back 10 seconds">↺ 10s</button>
+        <audio id="mainAudioPlayer" controls></audio>
+        <button id="skipForwardBtn" class="player-control-btn" title="Forward 15 seconds">15s ↻</button>
+        <div class="speed-control-container">
+          <label for="playbackSpeed">Speed:</label>
+          <select id="playbackSpeed" class="speed-select">
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Client-side Audio Logic with Page-Load State Syncing -->
+    <script>
+      function setupAudioSync() {
+        const audioPlayer = document.getElementById('mainAudioPlayer') as HTMLAudioElement;
+        const playerBar = document.getElementById('playerBar');
+        const titleDisplay = document.getElementById('nowPlayingTitle');
+        const speedSelect = document.getElementById('playbackSpeed') as HTMLSelectElement;
+        const skipBackBtn = document.getElementById('skipBackBtn') as HTMLButtonElement;
+        const skipForwardBtn = document.getElementById('skipForwardBtn') as HTMLButtonElement;
+        
+        // Retrieve base URL from DOM element attribute
+        const baseUrl = document.body.dataset.baseUrl || '/';
+
+        function getActiveSlug(): string | null {
+          return audioPlayer ? audioPlayer.getAttribute('data-active-slug') : null;
+        }
+
+        // SVG Path definitions for toggle button
+        const playPath = `<path d="M348.238,284.418l-120.294,69.507c-10.148,5.864-22.661,5.874-32.826,0.009c-10.158-5.862-16.415-16.699-16.415-28.426V186.493c0-11.728,6.258-22.564,16.415-28.426c5.076-2.93,10.741-4.395,16.406-4.395c5.67,0,11.341,1.468,16.42,4.402l120.295,69.507c10.149,5.864,16.4,16.696,16.4,28.418C364.639,267.722,358.387,278.553,348.238,284.418z"/>`;
+        const pausePath = `<path d="M20.051,31.704c0,1.459-1.183,2.64-2.641,2.64s-2.64-1.181-2.64-2.64V14.108c0-1.457,1.182-2.64,2.64-2.64s2.641,1.183,2.641,2.64V31.704z M31.041,31.704c0,1.459-1.183,2.64-2.64,2.64s-2.64-1.181-2.64-2.64V14.108c0-1.457,1.183-2.64,2.64-2.64s2.64,1.183,2.64,2.64V31.704z"/>`;
+
+        function setButtonState(button: HTMLButtonElement, isPlaying: boolean) {
+          const svg = button.querySelector('svg');
+          if (!svg) return;
+          
+          if (isPlaying) {
+            svg.innerHTML = pausePath;
+            svg.setAttribute('viewBox', '0 0 45.812 45.812');
+            button.setAttribute('aria-label', 'Pause');
+          } else {
+            svg.innerHTML = playPath;
+            svg.setAttribute('viewBox', '0 0 512 512');
+            button.setAttribute('aria-label', 'Play');
+          }
+        }
+
+        function resetAllButtons() {
+          document.querySelectorAll('.play-btn').forEach(btn => {
+            setButtonState(btn as HTMLButtonElement, false);
+          });
+        }
+
+        function syncPlayButtons() {
+          if (!audioPlayer) return;
+          const activeSlug = getActiveSlug();
+          const isPlaying = !audioPlayer.paused && !audioPlayer.ended;
+
+          document.querySelectorAll('.play-btn').forEach(btn => {
+            const btnSlug = btn.getAttribute('data-slug');
+            if (btnSlug === activeSlug) {
+              setButtonState(btn as HTMLButtonElement, isPlaying);
+            } else {
+              setButtonState(btn as HTMLButtonElement, false);
+            }
+          });
+        }
+
+        function toggleAudio(slug: string, audioSrc: string, trackTitle: string) {
+          if (!audioPlayer) return;
+
+          // Format clean static URL with baseUrl if not absolute
+          const cleanSrc = audioSrc.startsWith('http') ? audioSrc : (baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl) + audioSrc;
+          const activeSlug = getActiveSlug();
+
+          if (activeSlug === slug) {
+            if (audioPlayer.paused) {
+              audioPlayer.play().catch(err => console.error("Playback failed:", err));
+            } else {
+              audioPlayer.pause();
+            }
+          } else {
+            audioPlayer.setAttribute('data-active-slug', slug);
+            if (titleDisplay) {
+              titleDisplay.innerText = trackTitle;
+            }
+            audioPlayer.src = cleanSrc;
+            if (playerBar) {
+              playerBar.classList.add('visible');
+            }
+            
+            // Set speed rate
+            const savedSpeed = localStorage.getItem('vagbhata_playback_speed') || '1';
+            audioPlayer.playbackRate = parseFloat(savedSpeed);
+            if (speedSelect) speedSelect.value = audioPlayer.playbackRate.toString();
+
+            // Restore last active position for this track
+            const savedTime = localStorage.getItem(`vagbhata_time_${slug}`);
+            if (savedTime) {
+              audioPlayer.currentTime = parseFloat(savedTime);
+            }
+
+            audioPlayer.play().catch(err => console.error("Playback failed:", err));
+          }
+        }
+
+        // Click Handler (event delegation on document body)
+        const bodyClickHandler = (event: MouseEvent) => {
+          const button = (event.target as HTMLElement).closest('.play-btn') as HTMLButtonElement | null;
+          if (button) {
+            // Prevent link triggers if nesting button in parent anchor
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const slug = button.getAttribute('data-slug');
+            const audioSrc = button.getAttribute('data-audio-src');
+            const trackTitle = button.getAttribute('data-track-title');
+            if (slug && audioSrc && trackTitle) {
+              toggleAudio(slug, audioSrc, trackTitle);
+            }
+          }
+        };
+
+        // Clear previous play triggers before re-binding to prevent duplicate bindings across loads
+        document.body.removeEventListener('click', bodyClickHandler);
+        document.body.addEventListener('click', bodyClickHandler);
+
+        // Persistent events registration (ensure we only bind once to the persistent audio element)
+        if (audioPlayer && !audioPlayer.getAttribute('data-bound')) {
+          audioPlayer.setAttribute('data-bound', 'true');
+
+          audioPlayer.addEventListener('play', () => {
+            syncPlayButtons();
+            const activeSlug = getActiveSlug();
+            if (activeSlug) {
+              localStorage.setItem('vagbhata_last_active_slug', activeSlug);
+            }
+          });
+
+          audioPlayer.addEventListener('pause', () => {
+            syncPlayButtons();
+          });
+
+          audioPlayer.addEventListener('ended', () => {
+            resetAllButtons();
+            const activeSlug = getActiveSlug();
+            if (activeSlug) {
+              localStorage.removeItem(`vagbhata_time_${activeSlug}`);
+            }
+          });
+
+          // Throttle localstorage state writes in requestAnimationFrame to avoid INP delay
+          let saveTimer: number | null = null;
+          audioPlayer.addEventListener('timeupdate', () => {
+            const activeSlug = getActiveSlug();
+            if (activeSlug) {
+              if (saveTimer) cancelAnimationFrame(saveTimer);
+              saveTimer = requestAnimationFrame(() => {
+                localStorage.setItem(`vagbhata_time_${activeSlug}`, audioPlayer.currentTime.toString());
+              });
+            }
+          });
+        }
+
+        // Active State Sync
+        syncPlayButtons();
+
+        // Keep player bar visible if a track is active
+        if (audioPlayer && getActiveSlug() && playerBar) {
+          playerBar.classList.add('visible');
+          // Force layout repaint and native controls Shadow DOM rebuild to solve transition bugs
+          audioPlayer.removeAttribute('controls');
+          void audioPlayer.offsetHeight;
+          audioPlayer.setAttribute('controls', '');
+        }
+
+        // Sync speed select value with active audio rate
+        if (speedSelect && audioPlayer) {
+          speedSelect.value = audioPlayer.playbackRate.toString();
+        }
+
+        // Playback speed selector listener
+        if (speedSelect) {
+          speedSelect.onchange = () => {
+            const speed = parseFloat(speedSelect.value);
+            if (audioPlayer) {
+              audioPlayer.playbackRate = speed;
+            }
+            localStorage.setItem('vagbhata_playback_speed', speed.toString());
+          };
+        }
+
+        // Skip buttons click events
+        if (skipBackBtn) {
+          skipBackBtn.onclick = () => {
+            if (audioPlayer) {
+              audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10);
+            }
+          };
+        }
+
+        if (skipForwardBtn) {
+          skipForwardBtn.onclick = () => {
+            if (audioPlayer && audioPlayer.duration) {
+              audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 15);
+            }
+          };
+        }
+
+        // Resume banner setup on page load
+        const resumeContainer = document.getElementById('resumeContainer');
+        if (resumeContainer && !getActiveSlug()) {
+          const lastActiveSlug = localStorage.getItem('vagbhata_last_active_slug');
+          if (lastActiveSlug) {
+            const savedTime = localStorage.getItem(`vagbhata_time_${lastActiveSlug}`);
+            const chapterCard = document.querySelector(`.play-btn[data-slug="${lastActiveSlug}"]`);
+            if (chapterCard && savedTime && parseFloat(savedTime) > 3) {
+              const title = chapterCard.getAttribute('data-track-title') || 'Chapter';
+              const mins = Math.floor(parseFloat(savedTime) / 60);
+              const secs = Math.floor(parseFloat(savedTime) % 60).toString().padStart(2, '0');
+              const audioSrc = chapterCard.getAttribute('data-audio-src');
+
+              if (audioSrc) {
+                resumeContainer.innerHTML = `
+                  <div class="resume-banner">
+                    <span>Resume <strong>${title}</strong> at ${mins}:${secs}?</span>
+                    <div class="resume-actions">
+                      <button class="resume-btn" id="confirmResumeBtn">Resume</button>
+                      <button class="resume-dismiss-btn" id="dismissResumeBtn">×</button>
+                    </div>
+                  </div>
+                `;
+
+                document.getElementById('confirmResumeBtn')?.addEventListener('click', () => {
+                  toggleAudio(lastActiveSlug, audioSrc, title);
+                  resumeContainer.innerHTML = '';
+                });
+
+                document.getElementById('dismissResumeBtn')?.addEventListener('click', () => {
+                  resumeContainer.innerHTML = '';
+                  localStorage.removeItem('vagbhata_last_active_slug');
+                });
+              }
+            }
+          }
+        }
+
+        // Client-side text filtering logic (with debouncing to avoid INP delay)
+        const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+        if (searchInput) {
+          let searchDebounce: number | null = null;
+          searchInput.oninput = () => {
+            if (searchDebounce) clearTimeout(searchDebounce);
+            searchDebounce = window.setTimeout(() => {
+              const query = searchInput.value.toLowerCase().trim();
+              const sections = document.querySelectorAll('.sthana-section');
+
+              requestAnimationFrame(() => {
+                sections.forEach(section => {
+                  let visibleCount = 0;
+                  const cards = section.querySelectorAll('.chapter-card');
+                  
+                  cards.forEach(card => {
+                    const title = card.querySelector('.title')?.textContent?.toLowerCase() || '';
+                    const desc = card.querySelector('.description')?.textContent?.toLowerCase() || '';
+                    if (title.includes(query) || desc.includes(query)) {
+                      (card as HTMLElement).style.display = 'flex';
+                      visibleCount++;
+                    } else {
+                      (card as HTMLElement).style.display = 'none';
+                    }
+                  });
+
+                  if (visibleCount > 0) {
+                    (section as HTMLElement).style.display = 'block';
+                  } else {
+                    (section as HTMLElement).style.display = 'none';
+                  }
+                });
+              });
+            }, 100);
+          };
+        }
+      }
+
+      // Sync and bind listeners on page transitions or initial load
+      document.addEventListener('astro:page-load', setupAudioSync);
+
+      // Force instant visibility and repaint on DOM swap to prevent transition screenshot hiding
+      document.addEventListener('astro:after-swap', () => {
+        const audioPlayer = document.getElementById('mainAudioPlayer') as HTMLAudioElement;
+        const playerBar = document.getElementById('playerBar');
+        if (audioPlayer && audioPlayer.getAttribute('data-active-slug') && playerBar) {
+          playerBar.classList.add('visible');
+          
+          // Rebuild native audio shadow DOM controls on DOM swap
+          audioPlayer.removeAttribute('controls');
+          void audioPlayer.offsetHeight;
+          audioPlayer.setAttribute('controls', '');
+        }
+      });
+    </script>
+  </body>
+</html>

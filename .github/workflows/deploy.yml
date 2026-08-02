@@ -45,8 +45,7 @@ jobs:
         uses: FedericoCarboni/setup-ffmpeg@v3
 
       - name: Build
-        # Pass base path argument to Vite to match repository subfolder deployments
-        run: npm run build -- --base=/vagbhata/
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
