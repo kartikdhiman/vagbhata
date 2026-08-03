@@ -49,7 +49,7 @@ const playlistSchema = {
     "position": index + 1,
     "name": ch.title,
     "description": ch.description,
-    "url": `https://kartikdhiman.github.io${baseUrl}chapters/${ch.slug}/`
+    "url": `https://kartikdhiman.github.io${baseUrl}/chapters/${ch.slug}/`
   }))
 };
 ---
@@ -73,7 +73,7 @@ const playlistSchema = {
         <h2 class="sthana-title">{group.title}</h2>
         <div class="chapter-list">
           {group.chapters.map(ch => (
-            <a href={`${baseUrl}chapters/${ch.slug}/`} class="chapter-card" data-slug={ch.slug}>
+            <a href={`${baseUrl}/chapters/${ch.slug}/`} class="chapter-card" data-slug={ch.slug}>
               <div class="chapter-info">
                 {ch.chapterNumber > 0 && (
                   <span class="chapter-number">Chapter {ch.chapterNumber}</span>
